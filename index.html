@@ -1,0 +1,1266 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>WorldKV: Efficient World Memory with World Retrieval and Compression</title>
+
+
+    <meta
+        content="WorldKV: Efficient World Memory with World Retrieval and Compression"
+        name="description" />
+    <meta
+        content="WorldKV: Efficient World Memory with World Retrieval and Compression"
+        property="og:title" />
+    <meta
+        content="WorldKV: Efficient World Memory with World Retrieval and Compression"
+        property="og:description" />
+    <meta
+        content="WorldKV: Efficient World Memory with World Retrieval and Compression"
+        property="twitter:title" />
+    <meta
+        content="WorldKV: Efficient World Memory with World Retrieval and Compression"
+        property="twitter:description" />
+    <meta property="og:type" content="website" />
+    <meta content="summary_large_image" name="twitter:card" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
+        crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&family=Varela+Round&display=swap"
+        rel="stylesheet">
+    <link href="style.css?" rel="stylesheet" type="text/css" />
+
+    <!-- 🔎 Added minimal CSS for click‑to‑zoom lightbox -->
+    <style>
+      /* make images clearly zoomable */
+      img.zoomable { cursor: zoom-in; transition: transform .2s ease; }
+
+      /* fullscreen overlay */
+      .lightbox-overlay {
+        position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+        background: rgba(0,0,0,.9); z-index: 10000;
+      }
+      .lightbox-overlay.active { display: flex; }
+      .lightbox-overlay img { max-width: 95vw; max-height: 95vh; box-shadow: 0 10px 40px rgba(0,0,0,.6); border-radius: 8px; }
+      /* show zoom-out cursor while overlay is open */
+      .lightbox-overlay, .lightbox-overlay * { cursor: zoom-out; }
+
+      /* prevent background scroll when overlay is open */
+      body.no-scroll { overflow: hidden; }
+    </style>
+
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$','$$'], ['\\[','\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="main-nav">
+                <ul class="nav-links">
+                    <li><a href="#Teaser">Teaser</a></li>
+                    <li><a href="#Introduction">Introduction</a></li>
+                    <li><a href="#Motivation">Motivation</a></li>
+                    <li><a href="#Methods">Methods</a></li>
+                    <li><a href="#visual-representation-alignment">Qualitative</li>
+                    <li><a href="#comparison">Comparison</a></li>
+                    <!-- <li><a href="#ablation-studies">Ablation</a></li> -->
+                    <li><a href="#worldkvfullkv">Lost In the Middle</a></li>
+                    <!-- <li><a href="#world-model">World Models</a></li> -->
+                    <li><a href="#inspatio-world">Inspatio</a></li>
+                    <li><a href="#citation">Citation</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="hero-section">
+        <div class="container">
+            <div class="title-row">
+                <div class="title-flex">
+                    </video>
+                    <div class="title-text-block">
+                        <h1 class="title"><span class="gradient-text">WorldKV</span>: Efficient World Memory with <span class="title-break"></span> World Retrieval and Compression</h1>
+                        <h1 class="subtitle">arxiv 2026</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="author-line">
+                <div class="author-line-row">
+                    <a href="https://yj-142150.github.io/jungyi/" target="_blank" class="author-text">Jung Yi<sup class="affiliation-mark">1</sup></a>
+                    <span class="author-divider">·</span>
+                    <a href="https://github.com/kwjames98/" target="_blank" class="author-text">Minjae Kim<sup class="affiliation-mark">1</sup></a>
+                    <span class="author-divider">·</span>
+                    <a href="https://openreview.net/profile?id=~Paul_Hyunbin_Cho1" target="_blank" class="author-text">Paul Hyunbin Cho<sup class="affiliation-mark">1</sup></a>
+                    <span class="author-divider">·</span>
+                    <a href="https://woo1726.github.io/" target="_blank" class="author-text">Wooseok Jang<sup class="affiliation-mark">1</sup></a>
+                </div>
+                <div class="author-line-row">
+                    <a href="https://sangdooyun.github.io/" target="_blank" class="author-text">Sangdoo Yun<sup class="affiliation-mark">2</sup></a>
+                    <span class="author-divider">·</span>
+                    <a href="https://cvlab.kaist.ac.kr/" target="_blank" class="author-text">Seungryong Kim<sup class="affiliation-mark">1</sup></a>
+                </div>
+            </div>
+
+            <div class="base-row author-row affiliation-row">
+                <div class="base-col author-col affiliations">
+                    <sup class="affiliation-mark">1</sup> KAIST AI
+                    <br>
+                </div>
+                <div class="base-col author-col affiliations">
+                    <sup class="affiliation-mark">2</sup> Naver AI
+                    <br>
+                </div>
+            </div>
+            <div class="link-labels base-row">
+                <div class="base-col icon-col"><a href="https://arxiv.org/abs/2512.05081" target="_blank"
+                        class="link-block">
+                        <i class="fa fas fa-file-text main-icon" style="font-size: 60px"></i>
+                        <strong class="link-labels-text">Paper</strong>
+                    </a></div>
+                <div class="base-col icon-col"><a href='https://github.com/cvlab-kaist/WorldKV' class="link-block">
+                        <i class="fa fa-github main-icon" style="font-size: 60px"></i>
+                        <strong class="link-labels-text">Code</strong>
+                    </a></div>
+                <div class="base-col icon-col"><a href="#citation" class="link-block">
+                        <i class="fa fa-graduation-cap main-icon" style="font-size: 60px"></i>
+                        <strong class="link-labels-text">Citation</strong>
+                    </a></div>
+            </div>
+
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- <div class="new-notice">
+                <strong>New!</strong> Check out Deep Forcing on Interactive Prompting, World Models &amp; Causal Forcing!
+            </div> -->
+            <div> </div>
+            <div id="Teaser" class="base-row section">
+                <h2>Teaser</h2>
+            </div>
+
+            <!-- <div class="mini-tldr">
+                <p><strong>All videos, except <b>'Interactive Prompting' & 'World Models'</b>, were generated from a single prompt, with no re-caching, and are shown at 1× speed.</strong></p>
+            </div> -->
+
+            <div class="image-container">
+                <div class="video-grid subsection-grid">
+
+                    <div class="video-item">
+                    <div class="video-title">Input Image</div>
+                    <img
+                        class="image-player"
+                        src="04.jpg"
+                        alt="Input image: a yellow duckling swimming on a sunlit pond with water lilies"
+                        data-prompt="A tiny yellow duckling swims away from the viewer across a clear sunlit pond, sending soft concentric ripples through the shallow water as lily pads and blooming pink water lilies float ahead — lush green trees blur along the far bank, sunlight sparkling on the surface, the whole scene radiating gentle warmth, innocence, and the peaceful charm of a quiet garden pond in midsummer."
+                    >
+                    </div>
+
+                    <div class="video-item">
+                    <div class="video-title">WorldKV (Ours)</div>
+                    <video
+                        class="video-player"
+                        src="world_videos/dynamic/04_RLWSRL90_245.mp4"
+                        autoplay
+                        loop
+                        muted
+                        playsinline
+                        data-metrics-step-frames="12"
+                        data-metrics-fps="16"
+                        data-kv-vram-series="1.7 GB, 3.4 GB, 5.1 GB, 6.8 GB, 8.5 GB, 10.2 GB, 11.9 GB, 13.6 GB, 15.3 GB, 17.0 GB, 18.7 GB, 20.4 GB, 22.1 GB, 23.8 GB, 25.5 GB, 27.2 GB, 28.9 GB, 30.6 GB, 32.3 GB, 34.0 GB"
+                        data-throughput-series="8.9 fps, 8.8 fps, 8.6 fps, 8.3 fps, 8.0 fps, 7.9 fps, 7.8 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps, 7.7 fps"
+                        data-prompt="A tiny yellow duckling swims away from the viewer across a clear sunlit pond, sending soft concentric ripples through the shallow water as lily pads and blooming pink water lilies float ahead — lush green trees blur along the far bank, sunlight sparkling on the surface, the whole scene radiating gentle warmth, innocence, and the peaceful charm of a quiet garden pond in midsummer."
+                    ></video>
+                    </div>
+
+                    <div class="video-item">
+                    <div class="video-title">Full KV</div>
+                    <video
+                        class="video-player"
+                        src="world_videos/dynamic/04_RLWSRL90_245_full.mp4"
+                        autoplay
+                        loop
+                        muted
+                        playsinline
+                        data-metrics-step-frames="12"
+                        data-metrics-fps="16"
+                        data-kv-vram-series="3.4 GB, 6.8 GB, 10.2 GB, 13.6 GB, 17.0 GB, 20.4 GB, 23.8 GB, 27.2 GB, 30.6 GB, 34.0 GB, 37.4 GB, 40.8 GB, 44.2 GB, 47.6 GB, 51.0 GB, 54.4 GB, 57.8 GB, 61.2 GB, 64.6 GB, 68.0 GB"
+                        data-throughput-series="8.9 fps, 8.7 fps, 8.5 fps, 8.4 fps, 8.3 fps, 8.1 fps, 8.0 fps, 8.0 fps, 7.8 fps, 7.7 fps, 7.6 fps, 7.5 fps, 7.4 fps, 7.3 fps, 7.2 fps, 7.1 fps, 7.0 fps, 6.9 fps, 6.9 fps, 6.7 fps, 6.6 fps, 6.6 fps, 6.5 fps, 6.4 fps, 6.3 fps, 6.3 fps, 6.2 fps, 6.2 fps, 6.1 fps, 6.0 fps, 6.0 fps, 5.9 fps, 5.8 fps, 5.8 fps, 5.7 fps, 5.6 fps, 5.6 fps, 5.5 fps, 5.5 fps, 5.4 fps, 5.4 fps, 5.3 fps, 5.2 fps, 5.2 fps, 5.2 fps, 5.1 fps, 5.1 fps, 5.0 fps, 5.0 fps, 4.9 fps, 4.9 fps, 4.8 fps, 4.8 fps, 4.8 fps, 4.7 fps, 4.7 fps, 4.6 fps, 4.6 fps, 4.6 fps, 4.5 fps, 4.5 fps, 4.4 fps, 4.4 fps, 4.4 fps, 4.3 fps, 4.3 fps, 4.3 fps, 4.2 fps, 4.2 fps, 4.2 fps, 4.1 fps, 4.1 fps, 4.1 fps, 4.1 fps, 4.0 fps, 4.0 fps, 4.0 fps, 3.9 fps, 3.9 fps, 3.9 fps, 3.8 fps, 3.8 fps, 3.8 fps, 3.8 fps, 3.7 fps, 3.7 fps, 3.7 fps, 3.7 fps, 3.6 fps, 3.6 fps"
+                        data-prompt="A tiny yellow duckling swims away from the viewer across a clear sunlit pond, sending soft concentric ripples through the shallow water as lily pads and blooming pink water lilies float ahead — lush green trees blur along the far bank, sunlight sparkling on the surface, the whole scene radiating gentle warmth, innocence, and the peaceful charm of a quiet garden pond in midsummer."
+                    ></video>
+                    </div>
+
+                    <div class="video-item">
+                    <div class="video-title">Sliding Window</div>
+                    <video
+                        class="video-player"
+                        src="world_videos/dynamic/04_RLWSRL90_245_sliding.mp4"
+                        autoplay
+                        loop
+                        muted
+                        playsinline
+                        data-prompt="A tiny yellow duckling swims away from the viewer across a clear sunlit pond, sending soft concentric ripples through the shallow water as lily pads and blooming pink water lilies float ahead — lush green trees blur along the far bank, sunlight sparkling on the surface, the whole scene radiating gentle warmth, innocence, and the peaceful charm of a quiet garden pond in midsummer."
+                    ></video>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="base-row section">
+                <p class="explain">
+                    <strong>WorldKV</strong> is a training-free framework that enables efficient world memory in autoregressive video world models by combining <strong>World Retrieval</strong> and <strong>World Compression</strong>. <br>
+                    <br>
+                    <strong>WorldKV</strong> matches and in some cases exceeds <strong>full KV-cache memory fidelity at roughly 2× the throughput under almost half the KV cache VRAM/RAM footprint</strong> on Matrix-Game 2.0 and LingBot-World-Fast.
+                </p>
+</div>
+
+            <section id="Introduction" class="section">
+                <h2>Introduction</h2>
+                <div class="motivation-parts">
+                    <div class="motivation-part">
+                        <h3>Emergent Memory</h3>
+                        <p>
+                            The KV cache of autoregressive video world models is not merely a computational buffer — even models trained only on short clips can leverage the full KV history as an emergent long-term visual memory, faithfully reproducing previously seen viewpoints upon revisit.
+                        </p>
+                        <div class="motivation-video-grid">
+                            <div class="video-item">
+                                <div class="video-label">Matrix-Game-2.0</div>
+                                <video class="video-player" src="world_videos/fulls/re_R_L_R_L_90_nop.mp4" autoplay loop muted playsinline
+                                data-prompt="See the full prompt in the Cases when WorldKV outperforms Full KV section."></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Lingbot-World-Fast</div>
+                                <video class="video-player" src="world_videos/fulls/20_R_L_R_L_R_L90_360.mp4" autoplay loop muted playsinline
+                                data-prompt="See the full prompt in the Cases when WorldKV outperforms Full KV section."></video>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="Motivation" class="section">
+                <h2>Motivation</h2>
+                <div class="motivation-parts">
+                    <div class="motivation-part">
+                        <h3>VRAM & Attention Cost Efficiency</h3>
+                        <p>
+                            Full KV-cache attention preserves long-term memory, but its VRAM footprint quickly exceeds GPU capacity and the dramatically growing attention cost degrades inference speed below real-time. Efficient world memory requires retaining only the chunks that matter for revisits.
+                        </p>
+                        <div class="motivation-image-grid">
+                            <div class="image-content">
+                                <img src="images/fps_fullkv_ours_14b_13b_ours14_distinct.png" class="img medium-image" alt="WorldKV efficiency analysis">
+                            </div>
+                            <div class="image-content">
+                                <img src="images/kv_cache_vram_short_labels_large_font.png" class="img medium-image" alt="WorldKV cache efficiency comparison">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="motivation-part">
+                        <h3>Attention Analysis</h3>
+                        <p>
+                            Our analysis reveals attention concentrates on past KV chunks whose viewpoints overlap with the current frame, motivating camera/action-indexed retrieval of the top-k viewpoint-relevant chunks back into the active attention window.
+                        </p>
+                        <div class="image-container motivation-figure motivation-two-col">
+                            <!-- <div class="image-content motivation-primary">
+                                <img src="images/motivation_attn.png" class="img medium-image" alt="Comparisons diagram">
+                            </div> -->
+                            <div class="image-content motivation-secondary">
+                                <img src="images/attn_final3_image.png" class="img medium-image" alt="Additional comparisons diagram">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+          </section>
+
+            <section id="Methods" class="section">
+                <h2>WorldKV</h2>
+                <div class="image-container methods-figure">
+                    <div class="image-content">
+                        <img src="images/main_figure_worldkv.png" class="image-item img large-image z-depth-1" alt="VIRAL framework illustration">
+                    </div>
+                </div>
+                <div class="methods-text">
+                    <p>
+                    </p>
+                    <p>
+                    <strong><i>World Retrieval</i></strong> stores evicted KV-cache chunks in GPU/CPU memory indexed by camera/action state, and selectively retrieves the top-k viewpoint-relevant chunks back into the active attention window at revisit time, with no re-encoding required.
+                    <p>
+                    <strong><i>World Compression</i></strong>, which designates the first frame of each chunk as an anchor and prunes tokens by key-key cosine similarity, retains only the low-similarity distinctive tokens that encode newly revealed regions and temporally changing content while halving per-chunk storage.
+                    </p>
+                </div>
+            </section>
+
+            <section id="visual-representation-alignment" class="section">
+                <h2>Qualitative Results</h2>
+                <p>
+                    Qualitative results demonstrating the capabilities of WorldKV.
+                </p>
+
+                <!-- 1) Ours only: 3 x 4 grid (12 clips) -->
+                <h3>WorldKV on diverse scenes</h3>
+                <div class="video-grid-3x4">
+                    <!-- Row 1 (모델 인디케이터 포함) -->
+                    <div class="video-item">
+                        <div class="video-label">Astronaut</div>
+                        <video class="video-player" src="world_videos/dynamic/01_R_L_W_S_R_L90_318.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A lone astronaut in a bulky white spacesuit walks across a vast rust-colored desert plain on a Mars-like world, dust swirling around their boots as distant rocky mountains rise beneath a hazy orange sky — a small futuristic marker stands ahead on the barren terrain, while the low cinematic camera angle follows from behind, evoking quiet isolation, exploration, and the fragile determination of a human traveler crossing an alien frontier."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Underwater</div>
+                        <video class="video-player" src="world_videos/dynamic/24_WSRLRL90_245.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A scuba diver explores the dark interior of a sunken shipwreck, twin oxygen tanks and yellow fins visible as their flashlight cuts through blue-green water filled with bubbles and small fish — rusted pipes, broken beams, and corroded metal structures frame the narrow passage ahead, creating a tense underwater atmosphere of mystery, danger, and discovery inside a forgotten wreck."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Dawn</div>
+                        <video class="video-player" src="world_videos/dynamic/20_R_L_W_S_R_L90_318.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A sepia-toned etched illustration shows an armored rider on horseback crossing a barren plain beneath a blazing sun, lance raised as distant windmills stand across the horizon — rough crosshatched lines and weathered parchment textures give the landscape an old-world literary quality, evoking the lonely, dreamlike journey of a knight-errant through a dusty countryside of memory, madness, and impossible ideals."></video>
+                    </div>
+
+                    <!-- Row 2 -->
+                    <div class="video-item">
+                        <div class="video-label">Flying Sword</div>
+                        <video class="video-player" src="world_videos/dynamic/21_L_R_W_S_L_R90_318.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A white-robed swordsman stands balanced on a glowing golden flying blade above a vast celestial palace complex floating among the clouds, ornate East Asian temple rooftops and gilded towers stretching toward a monumental mountain-like shrine in the distance — mist swirls between suspended pavilions, sunlight glints off curved roofs, and the scene radiates mythic grandeur, martial fantasy, and divine ascent through a heavenly realm."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Hero</div>
+                        <video class="video-player" src="world_videos/dynamic/23_RLWSRL90_245.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A futuristic armored hero flies between towering skyscrapers above a dense modern city, blue jet flames blazing from their hands and boots as glowing cyan panels illuminate the silver exosuit — the camera follows from behind at high altitude, with glass towers, narrow streets, and a distant river receding below, capturing the exhilarating speed and cinematic spectacle of a sci-fi flight over an urban skyline."></video>
+                    </div> 
+
+                    <div class="video-item">
+                        <div class="video-label">Reed</div>
+                        <video class="video-player" src="world_videos/dynamic/26_L_R_W_S_L_R90_318.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A vast open highland plain stretches beneath a pale blue sky, golden grasses swaying in the foreground as small lakes glimmer across the flat valley floor — snow-capped mountains rise in the distance beyond rolling brown hills, while crisp daylight and wide horizontal composition convey the quiet spaciousness, wind-swept solitude, and natural beauty of a remote northern landscape."></video>
+                    </div>
+
+                    <!-- Row 3 -->
+                    <div class="video-item">
+                        <div class="video-label">Squirrel</div>
+                        <video class="video-player" src="world_videos/dynamic/29_L_R_W_S_L_R90_318.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A squirrel climbs upward along the rough bark of a towering tree, its fluffy tail filling the foreground as the camera looks steeply toward the sunlit canopy above — bright rays pierce through dense green leaves, moss and textured bark run vertically through the frame, and the intimate low-angle perspective captures the energetic motion and natural wonder of a small woodland creature in a summer forest."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Cat1</div>
+                        <video class="video-player" src="world_videos/dynamic/31_WSRLRL90_245.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A fluffy cat walks across a soft cream carpet toward a glowing fireplace in a warm, cozy living room, its tail swaying as golden lamplight fills the space — wooden bookshelves, cushioned armchairs, potted plants, sheer curtains, and a neatly arranged mantel surround the hearth, creating an inviting domestic scene of comfort, quiet companionship, and peaceful evening warmth."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Magic Girl</div>
+                        <video class="video-player" src="world_videos/dynamic/37_RLWSRL90_245.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A pink-haired anime-style mage rides a glowing broomstick through a rugged coastal canyon at sunset, sparkling magical trails curling behind her as she flies above crashing waves and jagged sea stacks — steep cliffs frame the golden ocean horizon, warm light glitters on the water, and the cinematic fantasy scene radiates adventure, speed, and whimsical magic over a dramatic seaside landscape."></video>
+                    </div>
+
+                    <!-- Row 4 -->
+                    <div class="video-item">
+                        <div class="video-label">Cat2</div>
+                        <video class="video-player" src="world_videos/dynamic/41_RLWSRL90_245.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A fluffy cream-colored cat walks across a sunlit living room rug beside a glowing fireplace, its body illuminated by warm window light spilling over polished wooden floors — built-in bookshelves, a cushioned armchair, woven baskets, folded blankets, and large white-framed windows surround the cozy domestic scene, creating a peaceful atmosphere of quiet comfort, soft textures, and afternoon warmth."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Track</div>
+                        <video class="video-player" src="world_videos/dynamic/uni01_L_R_W_S_L_R90_318.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A white metal soccer goal stands at the edge of a vivid green athletic field beside a curving red running track, its slightly sagging net casting thin shadows across the turf — low modern school buildings and dense summer trees line the background beneath a broad hazy sky, the scene bright and open, conveying the calm emptiness of a quiet campus sports ground between games."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Urban</div>
+                        <video class="video-player" src="world_videos/dynamic/uni03_L_R_W_S_L_R90_318_cut.mp4"
+                            autoplay loop muted playsinline
+                            data-prompt="A narrow residential road curves gently past dark wooden houses with tiled roofs and shuttered garages, a small white van tucked beside a utility pole at the edge of the pavement — low grassy embankments and distant wooded hills frame the quiet neighborhood beneath a soft blue evening sky with scattered clouds, capturing the peaceful stillness of a rural Japanese town at dusk."></video>
+                    </div>
+                </div>
+
+                <!-- 2) Ours vs baselines: 3 stacked rows (WorldKV / Full KV / Sliding Window) -->
+                <h3 id="comparison" class="comparison-heading">Comparison with baselines</h3>
+                <p class="paragraph">
+                    Qualitative comparisons of WorldKV against Full KV and other baselines on same prompts.
+                </p>
+
+                <div class="comparison-slider">
+                    <button class="comparison-nav prev" aria-label="Previous comparison set">
+                        <i class="fa fa-chevron-left"></i>
+                    </button>
+                    <div class="comparison-track">
+                        <div class="comparison-slide active">
+                            <div class="video-item">
+                                <div class="video-label">WorldKV (Ours)</div>
+                                <video class="video-player" src="world_videos/comparisons/08_ours.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A sparse medieval stone chamber is lit by a single overhead skylight, casting a clean beam of light across sandy brick walls where a longsword, a plain steel shield, and a battle axe hang mounted in a row — three oak barrels with iron bands are stacked neatly in the corner, the entire room spare and functional, conveying the quiet readiness of a soldier's personal armory."
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Full KV</div>
+                                <video class="video-player" src="world_videos/comparisons/08_fullKV.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A sparse medieval stone chamber is lit by a single overhead skylight, casting a clean beam of light across sandy brick walls where a longsword, a plain steel shield, and a battle axe hang mounted in a row — three oak barrels with iron bands are stacked neatly in the corner, the entire room spare and functional, conveying the quiet readiness of a soldier's personal armory."
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Sliding Window</div>
+                                <video class="video-player" src="world_videos/comparisons/08_sliding.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A sparse medieval stone chamber is lit by a single overhead skylight, casting a clean beam of light across sandy brick walls where a longsword, a plain steel shield, and a battle axe hang mounted in a row — three oak barrels with iron bands are stacked neatly in the corner, the entire room spare and functional, conveying the quiet readiness of a soldier's personal armory."                                    
+                                    ></video>
+                            </div>
+                        </div>
+                        <div class="comparison-slide">
+                            <div class="video-item">
+                                <div class="video-label">WorldKV (Ours)</div>
+                                <video class="video-player" src="world_videos/comparisons/14_ours_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A sun-drenched suburban home with warm tan stucco walls and a wide white double-car garage faces a broad smooth concrete driveway — manicured shrubs and tropical ornamental grasses line the base of the fence, a tall palm tree rising on the right against a bright partly cloudy sky, the scene radiating the clean, comfortable stillness of a well-kept residential neighborhood on a warm sunny afternoon."
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Full KV</div>
+                                <video class="video-player" src="world_videos/comparisons/14_fullKV_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A sun-drenched suburban home with warm tan stucco walls and a wide white double-car garage faces a broad smooth concrete driveway — manicured shrubs and tropical ornamental grasses line the base of the fence, a tall palm tree rising on the right against a bright partly cloudy sky, the scene radiating the clean, comfortable stillness of a well-kept residential neighborhood on a warm sunny afternoon."                                    
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Sliding Window</div>
+                                <video class="video-player" src="world_videos/comparisons/14_sliding_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A sun-drenched suburban home with warm tan stucco walls and a wide white double-car garage faces a broad smooth concrete driveway — manicured shrubs and tropical ornamental grasses line the base of the fence, a tall palm tree rising on the right against a bright partly cloudy sky, the scene radiating the clean, comfortable stillness of a well-kept residential neighborhood on a warm sunny afternoon."                                    
+                                    ></video>
+                            </div>
+                        </div>
+                        <div class="comparison-slide">
+                            <div class="video-item">
+                                <div class="video-label">WorldKV (Ours)</div>
+                                <video class="video-player" src="world_videos/comparisons/new_13_L_R_L_R_L_R_385_ours_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A wide city boulevard stretches into the distance between towering buildings alive with neon signs and glowing windows — vivid pink and cyan light bleeds across the wet pavement and empty sidewalks, a starry night sky visible above the urban canyon, stylized flat-shaded architecture receding toward a glowing horizon in a vibrant animated cityscape that pulses with electric nocturnal energy."
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Full KV</div>
+                                <video class="video-player" src="world_videos/comparisons/new13_L_R_L_R_L_R_385_full_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A wide city boulevard stretches into the distance between towering buildings alive with neon signs and glowing windows — vivid pink and cyan light bleeds across the wet pavement and empty sidewalks, a starry night sky visible above the urban canyon, stylized flat-shaded architecture receding toward a glowing horizon in a vibrant animated cityscape that pulses with electric nocturnal energy."
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Sliding Window</div>
+                                <video class="video-player" src="world_videos/comparisons/new13_seed1_L_R_L_R_L_R_385_sliding18_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A wide city boulevard stretches into the distance between towering buildings alive with neon signs and glowing windows — vivid pink and cyan light bleeds across the wet pavement and empty sidewalks, a starry night sky visible above the urban canyon, stylized flat-shaded architecture receding toward a glowing horizon in a vibrant animated cityscape that pulses with electric nocturnal energy."                                    
+                                    ></video>
+                            </div>
+                        </div>
+                        <div class="comparison-slide">
+                            <div class="video-item">
+                                <div class="video-label">WorldKV (Ours)</div>
+                                <video class="video-player" src="world_videos/1/07_L_R_W_S_L_R90_318_seed4936.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A vibrant canal-side market town bursts with color and life — timber-framed merchant buildings with warm amber rooftops face each other across a turquoise waterway where a gentle fountain bubbles, colorful bunting strung between balconies overhead, market stalls and hanging lanterns lining the banks below — the whole scene shimmers in bright midday light, radiating the festive, storybook charm of a thriving fantasy town center."
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Full KV</div>
+                                <video class="video-player" src="world_videos/1/07_fullKV_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A vibrant canal-side market town bursts with color and life — timber-framed merchant buildings with warm amber rooftops face each other across a turquoise waterway where a gentle fountain bubbles, colorful bunting strung between balconies overhead, market stalls and hanging lanterns lining the banks below — the whole scene shimmers in bright midday light, radiating the festive, storybook charm of a thriving fantasy town center."                                    
+                                    ></video>
+                            </div>
+                            <div class="video-item">
+                                <div class="video-label">Sliding Window</div>
+                                <video class="video-player" src="world_videos/1/07_sliding_cut.mp4"
+                                    autoplay loop muted playsinline
+                                    data-prompt="A vibrant canal-side market town bursts with color and life — timber-framed merchant buildings with warm amber rooftops face each other across a turquoise waterway where a gentle fountain bubbles, colorful bunting strung between balconies overhead, market stalls and hanging lanterns lining the banks below — the whole scene shimmers in bright midday light, radiating the festive, storybook charm of a thriving fantasy town center."                                    
+                                    ></video>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="comparison-nav next" aria-label="Next comparison set">
+                        <i class="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- <section id="ablation-studies" class="section">
+                <h2>Ablation</h2>
+                <p class="paragraph">Sink Size Ablation: Larger sinks (10-15 frames) reduce degradation and aesthetic drift, but excessive size (18) causes over-preservation and repetition.</p>
+                <div class="video-grid-3x2">
+                    <div class="video-item">
+                        <div class="video-label">Sink Size 0</div>
+                        <video class="video-player" src="videos/sinks/0_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="A dynamic shot from behind a white vintage SUV with a black roof rack as it speeds up a steep dirt road surrounded by towering redwood trees on a rugged mountain slope. Dust kicks up from its tires, and the sunlight shines on the SUV, casting a warm glow over the scene. The dirt road curves gently into the distance, with no other vehicles in sight. The trees on either side are dense redwoods, with patches of greenery scattered throughout. The car navigates the curve with ease, making it seem as if it is on a thrilling drive through the rugged terrain. The dirt road is framed by steep hills and mountains, with a clear blue sky above and wispy clouds drifting by. The camera captures the vehicle from the rear, emphasizing its powerful and adventurous journey."
+                        ></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Sink Size 4</div>
+                        <video class="video-player" src="videos/sinks/4_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="A dynamic shot from behind a white vintage SUV with a black roof rack as it speeds up a steep dirt road surrounded by towering redwood trees on a rugged mountain slope. Dust kicks up from its tires, and the sunlight shines on the SUV, casting a warm glow over the scene. The dirt road curves gently into the distance, with no other vehicles in sight. The trees on either side are dense redwoods, with patches of greenery scattered throughout. The car navigates the curve with ease, making it seem as if it is on a thrilling drive through the rugged terrain. The dirt road is framed by steep hills and mountains, with a clear blue sky above and wispy clouds drifting by. The camera captures the vehicle from the rear, emphasizing its powerful and adventurous journey."                        
+                        ></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Sink Size 9</div>
+                        <video class="video-player" src="videos/sinks/9_sink.mp4" autoplay loop muted playsinline
+                            data-prompt="A dynamic shot from behind a white vintage SUV with a black roof rack as it speeds up a steep dirt road surrounded by towering redwood trees on a rugged mountain slope. Dust kicks up from its tires, and the sunlight shines on the SUV, casting a warm glow over the scene. The dirt road curves gently into the distance, with no other vehicles in sight. The trees on either side are dense redwoods, with patches of greenery scattered throughout. The car navigates the curve with ease, making it seem as if it is on a thrilling drive through the rugged terrain. The dirt road is framed by steep hills and mountains, with a clear blue sky above and wispy clouds drifting by. The camera captures the vehicle from the rear, emphasizing its powerful and adventurous journey."                    
+                        ></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Sink Size 12</div>
+                        <video class="video-player" src="videos/sinks/12_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="A dynamic shot from behind a white vintage SUV with a black roof rack as it speeds up a steep dirt road surrounded by towering redwood trees on a rugged mountain slope. Dust kicks up from its tires, and the sunlight shines on the SUV, casting a warm glow over the scene. The dirt road curves gently into the distance, with no other vehicles in sight. The trees on either side are dense redwoods, with patches of greenery scattered throughout. The car navigates the curve with ease, making it seem as if it is on a thrilling drive through the rugged terrain. The dirt road is framed by steep hills and mountains, with a clear blue sky above and wispy clouds drifting by. The camera captures the vehicle from the rear, emphasizing its powerful and adventurous journey."                        
+                        ></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Sink Size 14</div>
+                        <video class="video-player" src="videos/sinks/14_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="A dynamic shot from behind a white vintage SUV with a black roof rack as it speeds up a steep dirt road surrounded by towering redwood trees on a rugged mountain slope. Dust kicks up from its tires, and the sunlight shines on the SUV, casting a warm glow over the scene. The dirt road curves gently into the distance, with no other vehicles in sight. The trees on either side are dense redwoods, with patches of greenery scattered throughout. The car navigates the curve with ease, making it seem as if it is on a thrilling drive through the rugged terrain. The dirt road is framed by steep hills and mountains, with a clear blue sky above and wispy clouds drifting by. The camera captures the vehicle from the rear, emphasizing its powerful and adventurous journey."                        
+                        ></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Sink Size 18</div>
+                        <video class="video-player" src="videos/sinks/18_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="A dynamic shot from behind a white vintage SUV with a black roof rack as it speeds up a steep dirt road surrounded by towering redwood trees on a rugged mountain slope. Dust kicks up from its tires, and the sunlight shines on the SUV, casting a warm glow over the scene. The dirt road curves gently into the distance, with no other vehicles in sight. The trees on either side are dense redwoods, with patches of greenery scattered throughout. The car navigates the curve with ease, making it seem as if it is on a thrilling drive through the rugged terrain. The dirt road is framed by steep hills and mountains, with a clear blue sky above and wispy clouds drifting by. The camera captures the vehicle from the rear, emphasizing its powerful and adventurous journey."                        
+                        ></video>
+                    </div>
+                </div> -->
+
+                <!-- <p class="paragraph add-top-padding">Component Analysis: Deep Sink (DS) and Participative Compression (PC) can be layered on top of the vanilla baseline. The clips below highlight how each component progressively improves long video generation.</p>
+                <div class="video-grid-3x1">
+                    <div class="video-item">
+                        <div class="video-label">Baseline</div>
+                        <video class="video-player" src="videos/sinks/abl_30s/SF_pirate.mp4" autoplay loop muted playsinline
+                        data-prompt="A photorealistic closeup video of two pirate ships battling each other as they sail inside a steaming cup of coffee. The ships are intricately detailed, with wooden planks, sails flapping in the breeze, and cannons aimed at each other. The crew members, wearing authentic pirate attire, brandish swords and pistols, their expressions fierce and determined. The coffee foam creates a frothy, turbulent sea, with ripples and waves realistically depicted. The background is a blurred, warm brown coffee surface, with steam rising gently. The camera angle is slightly elevated, capturing the intense action from above."
+                        ></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Baseline + Deep Sink</div>
+                        <video class="video-player" src="videos/sinks/abl_30s/SF_DS_pirate.mp4" autoplay loop muted playsinline
+                        data-prompt="A photorealistic closeup video of two pirate ships battling each other as they sail inside a steaming cup of coffee. The ships are intricately detailed, with wooden planks, sails flapping in the breeze, and cannons aimed at each other. The crew members, wearing authentic pirate attire, brandish swords and pistols, their expressions fierce and determined. The coffee foam creates a frothy, turbulent sea, with ripples and waves realistically depicted. The background is a blurred, warm brown coffee surface, with steam rising gently. The camera angle is slightly elevated, capturing the intense action from above."                   
+                        ></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Baseline + DS + PC</div>
+                        <video class="video-player" src="videos/ours_pirat.mp4" autoplay loop muted playsinline
+                        data-prompt="A photorealistic closeup video of two pirate ships battling each other as they sail inside a steaming cup of coffee. The ships are intricately detailed, with wooden planks, sails flapping in the breeze, and cannons aimed at each other. The crew members, wearing authentic pirate attire, brandish swords and pistols, their expressions fierce and determined. The coffee foam creates a frothy, turbulent sea, with ripples and waves realistically depicted. The background is a blurred, warm brown coffee surface, with steam rising gently. The camera angle is slightly elevated, capturing the intense action from above."                        
+                        ></video>
+                    </div>
+                </div>
+            </section> -->
+
+            <!-- <section id="interactive-prompting" class="section">
+                <h2>Interactive Prompting</h2>
+                <p class="paragraph">
+                    Deep Forcing enables users to modify prompts during streaming to interactively generate video in real time. Input prompts can be viewed via the "Prompt" button in the video.
+                </p>
+                <div class="video-grid">
+                    <div class="video-item">
+                        <div class="video-label">Casino</div>
+                        <video class="video-player" src="videos/casino_global_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="0~10s: A realistic video of a Texas Hold'em poker event at a casino. A male player in his late 30s with a medium build, short dark hair, light stubble, and a sharp jawline wears a fitted navy blazer over a charcoal crew-neck tee, dark jeans, and a stainless-steel watch. He sits at a well-lit poker table and tightly grips his hole cards, wearing a tense, serious expression. The table is filled with chips of various colors, the dealer is seen dealing cards, and several rows of slot machines glow in the background. The camera focuses on the player's strained concentration. Wide shot to medium close-up.&#10;&#10;10~20s: A realistic video of a Texas Hold'em poker event at a casino. The same male player - late 30s, medium build, short dark hair, light stubble, sharp jawline - dressed in a fitted navy blazer over a charcoal tee, dark jeans, and a stainless-steel watch - flicks his cards onto the felt, then leans back in the chair with arms spread wide in celebration. The dealer continues dealing to the table as stacks of multicolored chips crowd the surface; slot machines and nearby patrons fill the background. The camera locks onto the player's exuberant reaction. Wide shot to medium close-up.&#10;&#10;20~30s: A realistic video of a Texas Hold'em poker event at a casino. The same late-30s male player, medium build with short dark hair and light stubble, wearing a navy blazer, charcoal tee, dark jeans, and a stainless-steel watch, reveals the winning hand and leans back in celebration while the dealer keeps the game moving. A nearby patron claps and cheers for the winner, amplifying the festive atmosphere. The table brims with colorful chips, with slot machines and other tables behind. The camera centers on the winner's reaction as the applause rises. Wide shot to medium close-up."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Detective</div>
+                        <video class="video-player" src="videos/detective_global_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="0~10s: A female detective in her 40s, with sharp, intelligent eyes and her brown hair cut in a practical, no-nonsense bob, is standing in her dimly lit office late at night. She is wearing a dark charcoal grey blazer over a simple cream silk blouse. She stares at a large corkboard on the wall, which is covered with a complex web of photos, notes, and newspaper clippings connected by pieces of red string. A single desk lamp casts long shadows across the room, illuminating her thoughtful, determined expression.&#10;&#10;10~20s: A female detective in her 40s, with sharp, intelligent eyes and her brown hair cut in a practical, no-nonsense bob, wearing a dark charcoal grey blazer over a simple cream silk blouse, is studying the case board. Her partner, a younger male detective in his early 30s with a slightly disheveled look, five o'clock shadow, and wearing a slightly rumpled white dress shirt with a loosened dark tie, enters the office. He is holding two steaming Styrofoam cups of coffee and a file folder. He has a tired but resolute look on his face, ready for another long night.&#10;&#10;20~30s: The camera zooms in on the corkboard, moving past the various photos and notes. It settles on a close-up of a single, black-and-white photograph of a key witness, their face etched with worry. A red string is pinned to the photo, leading out of the frame. The shot is grainy and moody, emphasizing the human element and the high stakes of the investigation. The detectives are not visible, only the fragmented clues of the complex puzzle they are trying to solve."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Presentation</div>
+                        <video class="video-player" src="videos/presentation_global_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="0~10s: A young executive in a sharp business suit is giving a presentation in a modern, glass-walled boardroom. She is pointing to a chart on a large screen. Her colleagues are watching attentively.&#10;&#10;10~20s: The young executive giving the presentation in the boardroom is interrupted when the company's charismatic CEO unexpectedly enters the room with a broad smile. All the colleagues turn to look.&#10;&#10;20~30s: The camera slowly zooms in on the presentation screen, moving past the sleek slide title and bullet points. It settles on a close-up of a rising line chart and a highlighted KPI box labeled 'Project Horizon,' with a bold, unexpected milestone date circled in red. A small laser-pointer dot hovers near the most critical point on the graph, and a few handwritten sticky-note annotations are attached to the screen's bezel. The shot is crisp, high-contrast, and corporate yet tense. No people are visible - no faces, hands, silhouettes, reflections, or shadows. The frame contains only the screen and the slide content against a clean, neutral background."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Calligrapher</div>
+                        <video class="video-player" src="videos/calligrapher_global_sink.mp4" autoplay loop muted playsinline
+                        data-prompt="0~10s: An elderly calligrapher with a long, thin beard is carefully painting a Japanese kanji character on a large sheet of rice paper in a serene, traditional dojo. The dojo has paper screens and tatami mats.&#10;&#10;10~20s: The elderly callighapher in the serene dojo is being watched by his young grandson, who is sitting quietly and respectfully a few feet away, observing the master's every move. The room is silent except for the brush on paper.&#10;&#10;20~30s: The elderly calligrapher and his young grandson are in the serene dojo. The master finishes his character and gestures for his grandson to come closer. He hands the boy a smaller brush. The large rice paper sits on the floor."></video>
+                    </div>
+                </div>
+            </section> -->
+            <section id="worldkvfullkv" class="section">
+                <h2>Cases when WorldKV outperforms Full KV</h2>
+                <p class="paragraph">
+                    In Lingbot-World-Fast, WorldKV sometimes recalls revisited scenes more consistently than full KV-cache attention, likely because restricting attention to viewpoint-relevant chunks avoids the attention dilution caused by attending over many viewpoint-irrelevant caches in the Full KV.
+                </p>
+                <div class="video-grid">
+                    <div class="video-item">
+                        <div class="video-label">Full KV</div>
+                        <video class="video-player" src="world_videos/worldkvfullkv/00_R_L_R_L_R_L90_360_full.mp4" autoplay loop muted playsinline
+                        data-prompt="A sun-drenched stable courtyard paved with weathered cobblestones stretches before a sturdy stone-and-timber barn, where a chestnut horse stands quietly in the shade — a young adventurer in a blue tunic faces the open structure, shield on their back, as vast rolling green hills and rocky outcrops unfurl under a bright clear sky, evoking the boundless wonder of an open-world journey."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">WorldKV (Ours)</div>
+                        <video class="video-player" src="world_videos/worldkvfullkv/00_R_L_R_L_R_L90_360_compressed.mp4" autoplay loop muted playsinline
+                        data-prompt="A sun-drenched stable courtyard paved with weathered cobblestones stretches before a sturdy stone-and-timber barn, where a chestnut horse stands quietly in the shade — a young adventurer in a blue tunic faces the open structure, shield on their back, as vast rolling green hills and rocky outcrops unfurl under a bright clear sky, evoking the boundless wonder of an open-world journey."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Full KV</div>
+                        <video class="video-player" src="world_videos/worldkvfullkv/15_R_L_R_L_R_L90_360_Full_form.mp4" autoplay loop muted playsinline
+                        data-prompt="A cozy log cabin sitting room glows with the amber warmth of a roaring stone fireplace, split logs crackling behind a rough-hewn hearth — a cushioned armchair draped with a soft grey blanket faces a large wood-framed window through which a blizzard-swept pine forest stretches in blue-white silence, a steaming mug resting on a small side table atop a woven rug, the room the perfect refuge from the winter storm outside."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">WorldKV (Ours)</div>
+                        <video class="video-player" src="world_videos/worldkvfullkv/15_R_L_R_L_R_L90_360_compressed.mp4" autoplay loop muted playsinline
+                        data-prompt="A cozy log cabin sitting room glows with the amber warmth of a roaring stone fireplace, split logs crackling behind a rough-hewn hearth — a cushioned armchair draped with a soft grey blanket faces a large wood-framed window through which a blizzard-swept pine forest stretches in blue-white silence, a steaming mug resting on a small side table atop a woven rug, the room the perfect refuge from the winter storm outside."></video>
+                    </div>
+                </div>
+            </section>
+
+            <!-- <section id="world-model" class="section">
+                <h2>Application: World Models</h2>
+                <p class="paragraph">
+                    Our methods can be applied to world models such as Matrix-Game 2.0, mitigating error accumulation and color drift.
+                </p>
+                <h3>Dynamic Scene</h3>
+                <p>
+                    When action inputs (e.g., mouse or keyboard controls) are provided in real time, Deep Forcing substantially reduces visual fidelity degradation (e.g., color shifts and vehicle distortion).
+                </p>
+                <div class="video-grid">
+                    <div class="video-item">
+                        <div class="video-label">Matrix-Game 2.0</div>
+                        <video class="video-player" src="videos/original_demo_icon.mp4" autoplay loop muted playsinline
+                        data-prompt="Matrix-Game 2.0 is I2V model."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Ours (<em>Training-Free</em>)</div>
+                        <video class="video-player" src="videos/deep10_demo_icon.mp4" autoplay loop muted playsinline
+                        data-prompt="Matrix-Game 2.0 is I2V model."></video>
+                    </div>
+                </div>
+                <p></p>
+                <h3 class="subsection-spacer">Static Scene</h3>
+                <p>
+                    When no action input (e.g., mouse or keyboard controls) is provided, Matrix-Game-2.0 begins to degrade rapidly at around <b>10s</b>. In contrast, Deep Forcing can maintain a stable world even without action inputs, preventing such degradation.
+                </p>
+                <div class="video-grid">
+                    <div class="video-item">
+                        <div class="video-label">Matrix-Game 2.0</div>
+                        <video class="video-player" src="videos/static_world_original.mp4" autoplay loop muted playsinline
+                        data-prompt="Matrix-Game 2.0 is I2V model."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Ours (<em>Training-Free</em>)</div>
+                        <video class="video-player" src="videos/static_world_demo_icon_DP.mp4" autoplay loop muted playsinline
+                        data-prompt="Matrix-Game 2.0 is I2V model."></video>
+                    </div>
+                </div>
+            </section> -->
+
+            <section id="inspatio-world" class="section">
+                <h2>On Inspatio-World</h2>
+                <p class="paragraph">
+                    Our methods can also be applied to Inspatio-World. World Retrieval and World Compression effectively mitigate memory drift in Inspatio-World.
+                </p>
+                <div class="video-grid">
+                    <div class="video-item">
+                        <div class="video-label">Inspatio-World</div>
+                        <video class="video-player" src="world_videos/inspatio/0-pred_video_rank0.mp4" autoplay loop muted playsinline
+                        data-prompt="The image shows a bartender in a kitchen preparing a drink. He is wearing a black apron and a blue cap, and is standing behind a white countertop with various bottles of alcohol on it. The bartender is pouring a drink into a martini glass with a metal shaker. There are several other bottles of different types of alcohol scattered around the countertop, including bottles of liquor, a coffee maker, and a pitcher. In the background, there is a window with white blinds and a bookshelf with books and other decorative items. The kitchen appears to be well-lit with natural light coming in from the windows."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Ours (<em>Training-Free</em>)</div>
+                        <video class="video-player" src="world_videos/inspatio/ours.mp4" autoplay loop muted playsinline
+                        data-prompt="The image shows a bartender in a kitchen preparing a drink. He is wearing a black apron and a blue cap, and is standing behind a white countertop with various bottles of alcohol on it. The bartender is pouring a drink into a martini glass with a metal shaker. There are several other bottles of different types of alcohol scattered around the countertop, including bottles of liquor, a coffee maker, and a pitcher. In the background, there is a window with white blinds and a bookshelf with books and other decorative items. The kitchen appears to be well-lit with natural light coming in from the windows."></video>
+                    </div>
+                </div>
+                <!-- <div class="video-grid">
+                    <div class="video-item">
+                        <div class="video-label">Causal Forcing</div>
+                        <video class="video-player" src="videos/causal_santorini.mp4" autoplay loop muted playsinline
+                        data-prompt="An aerial view of Santorini during the blue hour, capturing the stunning architecture of white Cycladic buildings with blue domes against the twilight sky. The caldera views are breathtaking, with the volcanic cliffs and sea below creating a dramatic contrast. The lighting casts a soft, warm glow, enhancing the serene atmosphere. The image has a dreamy, almost ethereal quality, emphasizing the beauty of the setting. A bird's-eye view with a wide-angle lens, focusing on the intricate details of the buildings and the vast expanse of the caldera."></video>
+                    </div>
+                    <div class="video-item">
+                        <div class="video-label">Ours (<em>Training-Free</em>)</div>
+                        <video class="video-player" src="videos/Deep_causal_santorini.mp4" autoplay loop muted playsinline
+                        data-prompt="An aerial view of Santorini during the blue hour, capturing the stunning architecture of white Cycladic buildings with blue domes against the twilight sky. The caldera views are breathtaking, with the volcanic cliffs and sea below creating a dramatic contrast. The lighting casts a soft, warm glow, enhancing the serene atmosphere. The image has a dreamy, almost ethereal quality, emphasizing the beauty of the setting. A bird's-eye view with a wide-angle lens, focusing on the intricate details of the buildings and the vast expanse of the caldera."></video>
+                    </div>
+                </div> -->
+            </section>
+                
+                
+
+            <section id="conclusion" class="section">
+                <h2>Conclusion</h2>
+
+                <p>In this work, we propose WorldKV, a training-free framework that enables long-term world memory in autoregressive video world models through World Retrieval and World Compression. Experiments show memory fidelity competitive with full KV-cache attention and memory-trained baselines, while preserving real-time inference.</p>
+            <div class="citation add-top-padding">
+                <h1 id="citation">Citation</h1>
+                <p> If you use this work or find it helpful, please consider citing: </p>
+                <pre id="codecell0">
+    <!-- @article{yi2025deep,
+    title={Deep Forcing: Training-Free Long Video Generation with Deep Sink and Participative Compression},
+    author={Yi, Jung and Jang, Wooseok and Cho, Paul Hyunbin and Nam, Jisu and Yoon, Heeji and Kim, Seungryong},
+    journal={arXiv preprint arXiv:2512.05081},
+    year={2025}
+    } -->
+                </pre>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p class="credit">Credit: The design of this project page is inspired by previous academic project pages, such as <a href="https://llm-grounded-diffusion.github.io/" target="_blank">LLM-grounded Diffusion</a> and <a href="https://describe-anything.github.io/" target="_blank">Describe-anything</a>.</p>
+        </div>
+    </footer>
+
+    <script>
+    function toggleMute(element) {
+        const video = element.parentElement.querySelector('video');
+        const icon = element.querySelector('i');
+        const text = element.querySelector('.unmute-text');
+        
+        if (video.muted) {
+            video.muted = false;
+            icon.className = 'fa fa-volume-up';
+            text.textContent = 'Mute';
+        } else {
+            video.muted = true;
+            icon.className = 'fa fa-volume-off';
+            text.textContent = 'Click to unmute';
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const formatTime = (seconds) => {
+            if (!isFinite(seconds)) return '--:--';
+            const total = Math.max(Math.floor(seconds), 0);
+            const hrs = Math.floor(total / 3600);
+            const mins = Math.floor((total % 3600) / 60);
+            const secs = total % 60;
+            const two = (value) => String(value).padStart(2, '0');
+            return hrs > 0 ? `${hrs}:${two(mins)}:${two(secs)}` : `${mins}:${two(secs)}`;
+        };
+
+        const videos = document.querySelectorAll('video');
+        videos.forEach(video => {
+            video.addEventListener('play', function() {
+                const overlay = this.parentElement.querySelector('.unmute-overlay');
+                if (overlay) overlay.style.opacity = '0.8';
+            });
+            
+            video.addEventListener('pause', function() {
+                const overlay = this.parentElement.querySelector('.unmute-overlay');
+                if (overlay) overlay.style.opacity = '0.8';
+            });
+        });
+
+        // Build modal for video zoom
+        const videoLightbox = document.createElement('div');
+        videoLightbox.className = 'video-lightbox';
+        videoLightbox.innerHTML = `
+            <div class="video-lightbox-content">
+                <button type="button" class="video-lightbox-close" aria-label="Close video">
+                    <i class="fa fa-times"></i>
+                </button>
+                <video class="video-lightbox-player" controls playsinline></video>
+            </div>
+        `;
+        document.body.appendChild(videoLightbox);
+        const videoLightboxPlayer = videoLightbox.querySelector('.video-lightbox-player');
+        const videoLightboxClose = videoLightbox.querySelector('.video-lightbox-close');
+
+        function closeVideoLightbox() {
+            videoLightbox.classList.remove('active');
+            document.body.classList.remove('no-scroll');
+            videoLightboxPlayer.pause();
+            videoLightboxPlayer.removeAttribute('src');
+            videoLightboxPlayer.load();
+        }
+
+        function openVideoLightbox(sourceVideo) {
+            const src = sourceVideo.currentSrc || sourceVideo.getAttribute('src');
+            if (!src) return;
+            videoLightboxPlayer.src = src;
+            videoLightboxPlayer.muted = sourceVideo.muted;
+            const syncTime = () => {
+                try {
+                    videoLightboxPlayer.currentTime = sourceVideo.currentTime || 0;
+                } catch (e) {}
+            };
+            if (videoLightboxPlayer.readyState >= 1) {
+                syncTime();
+            } else {
+                videoLightboxPlayer.addEventListener('loadedmetadata', syncTime, { once: true });
+            }
+            videoLightbox.classList.add('active');
+            document.body.classList.add('no-scroll');
+            videoLightboxPlayer.play();
+            sourceVideo.pause();
+        }
+
+        videoLightbox.addEventListener('click', (event) => {
+            if (event.target === videoLightbox) {
+                closeVideoLightbox();
+            }
+        });
+        videoLightboxClose.addEventListener('click', (event) => {
+            event.stopPropagation();
+            closeVideoLightbox();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && videoLightbox.classList.contains('active')) {
+                closeVideoLightbox();
+            }
+        });
+
+        // Prompt modal
+        const promptModal = document.createElement('div');
+        promptModal.className = 'prompt-modal';
+        promptModal.innerHTML = `
+            <div class="prompt-modal-card">
+                <button type="button" class="prompt-modal-close" aria-label="Close prompt">
+                    <i class="fa fa-times"></i>
+                </button>
+                <div class="prompt-modal-body">
+                    <h4>Prompt</h4>
+                    <p class="prompt-text"></p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(promptModal);
+        const promptTextNode = promptModal.querySelector('.prompt-text');
+
+        function openPromptModal(text) {
+            promptTextNode.textContent = text || 'Prompt coming soon.';
+            promptModal.classList.add('active');
+            document.body.classList.add('no-scroll');
+        }
+
+        function closePromptModal() {
+            promptModal.classList.remove('active');
+            document.body.classList.remove('no-scroll');
+        }
+
+        promptModal.addEventListener('click', (event) => {
+            if (event.target === promptModal || event.target.closest('.prompt-modal-close')) {
+                closePromptModal();
+            }
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && promptModal.classList.contains('active')) {
+                closePromptModal();
+            }
+        });
+
+        // Enable tap-to-toggle controls for showcase videos
+        document.querySelectorAll('.video-player').forEach(video => {
+            const wrapper = video.closest('.video-item') || video.parentElement;
+            if (!wrapper) return;
+
+            const hint = document.createElement('div');
+            hint.className = 'video-toggle-hint';
+            wrapper.appendChild(hint);
+
+            const controls = document.createElement('div');
+            controls.className = 'video-controls';
+
+            const playButton = document.createElement('button');
+            playButton.type = 'button';
+            playButton.className = 'video-control-btn play-toggle';
+            playButton.innerHTML = '<i class="fa fa-pause"></i>';
+
+            const timeLabel = document.createElement('div');
+            timeLabel.className = 'video-time';
+            timeLabel.textContent = '0:00 / --:--';
+
+            const progress = document.createElement('div');
+            progress.className = 'video-progress';
+            const progressFill = document.createElement('div');
+            progressFill.className = 'video-progress-fill';
+            progress.appendChild(progressFill);
+
+            const expandButton = document.createElement('button');
+            expandButton.type = 'button';
+            expandButton.className = 'video-control-btn expand';
+            expandButton.innerHTML = '<i class="fa fa-expand"></i>';
+
+            const promptButton = document.createElement('button');
+            promptButton.type = 'button';
+            promptButton.className = 'video-prompt-btn';
+            promptButton.innerHTML = '<i class="fa fa-align-left"></i> Prompt';
+            wrapper.appendChild(promptButton);
+
+            controls.appendChild(playButton);
+            controls.appendChild(timeLabel);
+            controls.appendChild(progress);
+            controls.appendChild(expandButton);
+            wrapper.appendChild(controls);
+
+            let hideHintTimeout;
+            function showHint() {
+                const isPaused = video.paused;
+                hint.innerHTML = `<i class="fa ${isPaused ? 'fa-play' : 'fa-pause'}"></i>${isPaused ? 'Tap to play' : 'Tap to pause'}`;
+                hint.classList.add('show');
+                clearTimeout(hideHintTimeout);
+                hideHintTimeout = setTimeout(() => hint.classList.remove('show'), 1600);
+            }
+
+            const syncPlayIcon = () => {
+                playButton.innerHTML = `<i class="fa ${video.paused ? 'fa-play' : 'fa-pause'}"></i>`;
+            };
+
+            const updateTimeLabel = () => {
+                const current = formatTime(video.currentTime || 0);
+                const total = formatTime(video.duration);
+                timeLabel.textContent = `${current} / ${total}`;
+            };
+
+            const updateProgress = () => {
+                if (!video.duration || !isFinite(video.duration)) {
+                    progressFill.style.width = '0%';
+                    return;
+                }
+                const ratio = video.currentTime / video.duration;
+                progressFill.style.width = `${Math.min(Math.max(ratio, 0), 1) * 100}%`;
+            };
+
+            // Teaser 영상 위 메트릭 패널 (KV cache size in VRAM / Throughput per chunk).
+            // 다시 켜고 싶으면 아래 SHOW_TEASER_METRICS 값을 true로 바꾸면 됩니다.
+            const SHOW_TEASER_METRICS = false;
+            const teaserMetrics = (SHOW_TEASER_METRICS && video.closest('.subsection-grid')) ? createTeaserMetrics(video, wrapper) : null;
+
+            video.addEventListener('click', () => {
+                if (video.paused) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            });
+
+            playButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (video.paused) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            });
+
+            expandButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                openVideoLightbox(video);
+            });
+
+            promptButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                openPromptModal(video.dataset.prompt);
+            });
+
+            video.addEventListener('play', () => {
+                showHint();
+                syncPlayIcon();
+            });
+            video.addEventListener('pause', () => {
+                showHint();
+                syncPlayIcon();
+            });
+            video.addEventListener('ended', () => {
+                syncPlayIcon();
+            });
+
+            video.addEventListener('loadedmetadata', () => {
+                updateProgress();
+                updateTimeLabel();
+            });
+            video.addEventListener('timeupdate', () => {
+                updateProgress();
+                updateTimeLabel();
+            });
+
+            progress.addEventListener('click', event => {
+                event.stopPropagation();
+                if (!video.duration || !isFinite(video.duration)) return;
+                const rect = progress.getBoundingClientRect();
+                const ratio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+                video.currentTime = ratio * video.duration;
+                updateProgress();
+            });
+
+            updateTimeLabel();
+            updateProgress();
+            syncPlayIcon();
+            teaserMetrics?.start();
+            showHint();
+        });
+
+        function parseMetricSeries(value) {
+            if (!value) return [];
+            return value.split(',').map(item => item.trim()).filter(Boolean);
+        }
+
+        function createTeaserMetrics(video, wrapper) {
+            const kvSeries = parseMetricSeries(video.dataset.kvVramSeries);
+            const throughputSeries = parseMetricSeries(video.dataset.throughputSeries);
+            const stepFrames = Number(video.dataset.metricsStepFrames) || 12;
+            const fallbackFps = Number(video.dataset.metricsFps) || 16;
+            const panel = document.createElement('div');
+            panel.className = 'teaser-metrics';
+            panel.innerHTML = `
+                <div class="teaser-metric-row">
+                    <span>KV cache size in VRAM</span>
+                    <strong class="teaser-kv-value">--</strong>
+                </div>
+                <div class="teaser-metric-row">
+                    <span>Throughput per chunk</span>
+                    <strong class="teaser-throughput-value">--</strong>
+                </div>
+            `;
+            wrapper.insertBefore(panel, wrapper.firstElementChild);
+
+            const kvValue = panel.querySelector('.teaser-kv-value');
+            const throughputValue = panel.querySelector('.teaser-throughput-value');
+            let lastChunkIndex = -1;
+            let frameCallbackId = null;
+            let intervalId = null;
+
+            const updateMetrics = (frameNumber) => {
+                const chunkIndex = Math.max(Math.floor(frameNumber / stepFrames), 0);
+                if (chunkIndex === lastChunkIndex) return;
+                lastChunkIndex = chunkIndex;
+                kvValue.textContent = kvSeries[chunkIndex] || kvSeries[kvSeries.length - 1] || '--';
+                throughputValue.textContent = throughputSeries[chunkIndex] || throughputSeries[throughputSeries.length - 1] || '--';
+            };
+
+            const updateFromTime = () => {
+                updateMetrics(Math.floor((video.currentTime || 0) * fallbackFps));
+            };
+
+            const scheduleFrameCallback = () => {
+                if (!video.requestVideoFrameCallback) return false;
+                frameCallbackId = video.requestVideoFrameCallback((now, metadata) => {
+                    const frameNumber = Math.floor((metadata.mediaTime || video.currentTime || 0) * fallbackFps);
+                    updateMetrics(frameNumber);
+                    scheduleFrameCallback();
+                });
+                return true;
+            };
+
+            const start = () => {
+                updateFromTime();
+                if (!scheduleFrameCallback()) {
+                    intervalId = window.setInterval(updateFromTime, 150);
+                }
+            };
+
+            video.addEventListener('seeking', () => {
+                lastChunkIndex = -1;
+                updateFromTime();
+            });
+
+            video.addEventListener('emptied', () => {
+                if (frameCallbackId && video.cancelVideoFrameCallback) {
+                    video.cancelVideoFrameCallback(frameCallbackId);
+                }
+                if (intervalId) {
+                    window.clearInterval(intervalId);
+                }
+            });
+
+            return { start };
+        }
+
+        const teaserVideos = Array.from(document.querySelectorAll('.subsection-grid .video-player'));
+        let syncingTeaserVideos = false;
+
+        function syncTeaserVideos(sourceVideo, action) {
+            if (syncingTeaserVideos) return;
+            syncingTeaserVideos = true;
+            teaserVideos.forEach(video => {
+                if (video === sourceVideo) return;
+                if (Number.isFinite(sourceVideo.currentTime) && Math.abs(video.currentTime - sourceVideo.currentTime) > 0.08) {
+                    try {
+                        video.currentTime = sourceVideo.currentTime;
+                    } catch (e) {}
+                }
+                if (action === 'play' && video.paused) {
+                    video.play().catch(() => {});
+                }
+                if (action === 'pause' && !video.paused) {
+                    video.pause();
+                }
+            });
+            syncingTeaserVideos = false;
+        }
+
+        teaserVideos.forEach(video => {
+            video.addEventListener('play', () => syncTeaserVideos(video, 'play'));
+            video.addEventListener('pause', () => syncTeaserVideos(video, 'pause'));
+            video.addEventListener('seeking', () => syncTeaserVideos(video, 'seek'));
+            video.addEventListener('timeupdate', () => {
+                if (!video.paused) {
+                    syncTeaserVideos(video, 'time');
+                }
+            });
+        });
+
+        // Comparison slider for 2x2 batches
+        const comparisonSlider = document.querySelector('.comparison-slider');
+        if (comparisonSlider) {
+            const slides = comparisonSlider.querySelectorAll('.comparison-slide');
+            const prevButton = comparisonSlider.querySelector('.comparison-nav.prev');
+            const nextButton = comparisonSlider.querySelector('.comparison-nav.next');
+            let currentSlide = 0;
+
+            function showComparisonSlide(index) {
+                slides.forEach(slide => slide.classList.remove('active'));
+                currentSlide = (index + slides.length) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }
+
+            prevButton.addEventListener('click', () => showComparisonSlide(currentSlide - 1));
+            nextButton.addEventListener('click', () => showComparisonSlide(currentSlide + 1));
+        }
+
+        // Initialize all slideshows
+        document.querySelectorAll('.slideshow-container').forEach(container => {
+            const slideshow = container.querySelector('.slideshow');
+            const slides = slideshow.querySelectorAll('.slide');
+            const prevButton = container.querySelector('.slideshow-nav.prev');
+            const nextButton = container.querySelector('.slideshow-nav.next');
+            const playPauseButton = container.querySelector('.play-pause');
+            
+            let currentSlide = 0;
+            let autoplayInterval;
+            let isPlaying = true;
+
+            function showSlide(n) {
+                slides.forEach(slide => slide.classList.remove('active'));
+                currentSlide = (n + slides.length) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }
+
+            function changeSlide(n) {
+                showSlide(currentSlide + n);
+                resetAutoplay();
+            }
+
+            function togglePlayPause() {
+                if (isPlaying) {
+                    clearInterval(autoplayInterval);
+                    playPauseButton.innerHTML = '<i class="fa fa-play"></i>';
+                } else {
+                    startAutoplay();
+                    playPauseButton.innerHTML = '<i class="fa fa-pause"></i>';
+                }
+                isPlaying = !isPlaying;
+            }
+
+            function startAutoplay() {
+                autoplayInterval = setInterval(() => {
+                    showSlide(currentSlide + 1);
+                }, 5000);
+            }
+
+            function resetAutoplay() {
+                clearInterval(autoplayInterval);
+                if (isPlaying) {
+                    startAutoplay();
+                }
+            }
+
+            // Initialize this slideshow
+            showSlide(0);
+            startAutoplay();
+
+            // Add event listeners
+            prevButton.addEventListener('click', () => changeSlide(-1));
+            nextButton.addEventListener('click', () => changeSlide(1));
+            playPauseButton.addEventListener('click', togglePlayPause);
+        });
+
+        // Handle main video play button
+        const mainVideo = document.querySelector('.main-video');
+        const playButton = document.querySelector('.play-button-overlay');
+        
+        if (mainVideo && playButton) {
+            // Click play button to play video
+            playButton.addEventListener('click', () => {
+                mainVideo.play();
+                mainVideo.classList.add('playing');
+            });
+
+            // Handle video play/pause events
+            mainVideo.addEventListener('play', () => {
+                mainVideo.classList.add('playing');
+            });
+
+            mainVideo.addEventListener('pause', () => {
+                mainVideo.classList.remove('playing');
+            });
+
+            mainVideo.addEventListener('ended', () => {
+                mainVideo.classList.remove('playing');
+            });
+        }
+
+        // -----------------------------
+        // 🖼️ Click-to-zoom Lightbox
+        // -----------------------------
+        // Build overlay once
+        const lightbox = document.createElement('div');
+        lightbox.className = 'lightbox-overlay';
+        lightbox.setAttribute('role', 'dialog');
+        lightbox.setAttribute('aria-modal', 'true');
+        lightbox.innerHTML = '<img alt="Expanded image">';
+        document.body.appendChild(lightbox);
+        const lightboxImg = lightbox.querySelector('img');
+
+        function openLightbox(src, alt) {
+            lightboxImg.src = src;
+            lightboxImg.alt = alt || '';
+            lightbox.classList.add('active');
+            document.body.classList.add('no-scroll');
+        }
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            document.body.classList.remove('no-scroll');
+            lightboxImg.src = '';
+        }
+
+        // Close on click anywhere or on Esc
+        lightbox.addEventListener('click', closeLightbox);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+        });
+
+        // Mark target images as zoomable and wire up click
+        const zoomableImages = document.querySelectorAll('.image-container img, .slideshow img, .main-content img.img, .hero-section img.img');
+        zoomableImages.forEach(img => {
+            img.classList.add('zoomable');
+            img.addEventListener('click', () => {
+                // support optional high-res source via data-fullsrc
+                const src = img.getAttribute('data-fullsrc') || img.currentSrc || img.src;
+                openLightbox(src, img.alt);
+            });
+        });
+    });
+    </script>
+</body>
+</html>
