@@ -5,8 +5,11 @@
 
 <sup>1</sup>KAIST AI&emsp;<sup>2</sup>Naver AI
 
+<span style="font-size: 16px; font-weight: 700;">
+  <a href="https://cvlab-kaist.github.io/WorldKV/">https://cvlab-kaist.github.io/WorldKV/</a>
+</span>
 
-We are currently cleaning up the code and plan to release it in early June.
+We are currently cleaning up the code and plan to release it in June.
 
 </div>
 
@@ -23,6 +26,17 @@ We are currently cleaning up the code and plan to release it in early June.
 </table>
 
 </div>
+
+## Citation
+If you find WorldKV useful for your research, please kindly cite our paper:
+```
+@article{yi2026worldkv,
+  title={WorldKV: Efficient World Memory with World Retrieval and Compression},
+  author={Yi, Jung and Kim, Minjae and Cho, Paul Hyunbin and Jang, Wooseok and Yun, Sangdoo and Kim, Seungryong},
+  journal={arXiv preprint arXiv:2605.22718},
+  year={2026}
+}
+```
 
 <!-- TODO: Add setup, training, and inference instructions for each implementation above. -->
 
