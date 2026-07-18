@@ -490,7 +490,9 @@ def sp_attn_forward_causal(
         sink_k = kv_cache["k"][:, :sink_tokens]
         sink_v = kv_cache["v"][:, :sink_tokens]
         retr_tokens = retrieval_kv['k'].shape[1]
-        recent_budget = max(0, max_attention_size - sink_tokens - retr_tokens)
+        recent_budget = retrieval_kv.get('recent_frames', 0) * frame_seqlen
+        if 'recent_frames' not in retrieval_kv:
+            recent_budget = max(0, max_attention_size - sink_tokens - retr_tokens)
         recent_k = kv_cache["k"][:, max(sink_tokens, local_end_index - recent_budget):local_end_index]
         recent_v = kv_cache["v"][:, max(sink_tokens, local_end_index - recent_budget):local_end_index]
         retr_k = retrieval_kv['k'].to(query.dtype).clone()

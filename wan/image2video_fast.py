@@ -582,6 +582,7 @@ class WanI2VFast:
                                 'compress_anchor_rotate': kv_compression_anchor_rotate,
                                 'compress_chunk_size': chunk_size,
                                 'stored_compressed': (kv_compression_enable and kv_compression_at_store),
+                                'recent_frames': recent_frames,
                             })
 
                 if use_retrieval and retrieval_kv is None:
