@@ -65,7 +65,7 @@ Before running inference, you need to prepare:
 A single run on 4 GPUs with camera-pose retrieval + store-time compression:
 
 ```sh
-CUDA_DEVICES=0,1,2,3 torchrun --nproc_per_node=4 generate_fast.py \
+CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc_per_node=4 generate_fast.py \
     --task i2v-A14B \
     --size 480*832 \
     --ckpt_dir ./lingbot-world-base-cam \
